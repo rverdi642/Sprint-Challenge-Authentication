@@ -1,6 +1,7 @@
 const axios = require('axios');
-
-const { authenticate } = require('./middlewares');
+const bcrypt = require('bcryptjs');
+const db = require('../database/dbConfig');
+const { authenticate, genToken } = require('./middlewares');
 
 module.exports = server => {
   server.post('/api/register', register);
@@ -8,9 +9,30 @@ module.exports = server => {
   server.get('/api/jokes', authenticate, getJokes);
 };
 
-function register(req, res) {
+//function register(req, res) {
   // implement user registration
-}
+  function register(req, res)  {
+    const creds = req.body;
+    const hash = bcrypt.hashSync(creds.password, 3);
+    creds.password = hash;
+
+    db('users')
+    .insert(creds)
+    .then(ids => {
+      db('users')
+        .where({ id: ids[0] })
+        .first()
+        .then(user => {
+          const token = genToken(user);
+          res.status(201).json({id: user.id,token});
+        });
+    })
+    .catch(err => res.status(500).json({message: "Severe Error"}));
+    // .catch(function(error) {
+    //   res.status(500).json({ error });
+    // });
+  }
+//}
 
 function login(req, res) {
   // implement user login
