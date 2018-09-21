@@ -9,7 +9,7 @@ module.exports = server => {
   server.get('/api/jokes', authenticate, getJokes);
 };
 
-//function register(req, res) {
+
   // implement user registration
   function register(req, res)  {
     const creds = req.body;
@@ -36,7 +36,27 @@ module.exports = server => {
 
 function login(req, res) {
   // implement user login
+  const creds = req.body;
+
+  db('users')
+      .where({username: creds.username})
+      .first()
+      .then(user => {
+          if (user && bcrypt.compareSync(creds.password, user.password)) {
+              const token = generateToken(user);
+              res.status(200).json(token)
+          } 
+          else {
+              return res.status(400).json({Message: 'Wrong credentials'})
+          }
+      })
+      .catch(error => {
+          res.status(500).json(error)
+      })
 }
+
+
+
 
 function getJokes(req, res) {
   axios
